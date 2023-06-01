@@ -4,11 +4,11 @@ import Link from "next/link";
 import { useSelector } from "react-redux";
 import Wrapper from "@/components/Wrapper";
 import CartItem from "@/components/CartItem";
-import KhaltiCheckout from "khalti-checkout-web";
 import { useRouter } from "next/router";
+import KhaltiCheckout from "khalti-checkout-web";
+import { ESEWA_TEST_PID, ESEWA_URL, ESEWA_SCD } from "./config";
 
 const Cart = () => {
-  const [loading, setLoading] = useState(false);
   const { cartItems } = useSelector((state) => state.cart);
   const router = useRouter();
 
@@ -16,7 +16,32 @@ const Cart = () => {
     return cartItems.reduce((total, val) => total + val.attributes.price, 0);
   }, [cartItems]);
 
-  const handlePayment = () => {
+  const [loading, setLoading] = useState(false);
+
+  const handleESewaPayment = () => {
+    setLoading(true);
+
+    // Prepare the payment payload for eSewa
+    const payload = {
+      amt: subTotal,
+      psc: 0,
+      pdc: 0,
+      txAmt: 0,
+      tAmt: subTotal,
+      pid: ESEWA_TEST_PID,
+      scd: ESEWA_SCD,
+      su: "https://d2evy.csb.app/success",
+      fu: "https://d2evy.csb.app/failed"
+    };
+
+    // Generate the eSewa payment URL
+    const paymentUrl = `${ESEWA_URL}?pid=${payload.pid}&amt=${payload.amt}&psc=${payload.psc}&pdc=${payload.pdc}&txAmt=${payload.txAmt}&scd=${payload.scd}&su=${window.location.origin}/esewa-success&fu=${window.location.origin}/esewa-failed`;
+
+    // Redirect to the eSewa payment URL
+    window.location.href = paymentUrl;
+  };
+
+  const handleKhaltiPayment = () => {
     setLoading(true);
 
     const config = {
@@ -34,6 +59,7 @@ const Cart = () => {
         onError(error) {
           console.log(error);
           setLoading(false);
+          router.push("/failed");
         },
         onClose() {
           setLoading(false);
@@ -80,11 +106,19 @@ const Cart = () => {
                     transaction fees.
                   </div>
                 </div>
+               
                 <button
                   className="w-full py-4 rounded-full bg-black text-white text-lg font-medium transition-transform active:scale-95 mb-3 hover:opacity-75 flex items-center gap-2 justify-center"
-                  onClick={handlePayment}
+                  onClick={handleKhaltiPayment}
                 >
-                  Checkout
+                  Pay via Khalti
+                  {loading && <img src="/spinner.svg" />}
+                </button>
+                <button
+                  className="w-full py-4 rounded-full bg-black text-white text-lg font-medium transition-transform active:scale-95 mb-3 hover:opacity-75 flex items-center gap-2 justify-center"
+                  onClick={handleESewaPayment}
+                >
+                  Pay via eSewa
                   {loading && <img src="/spinner.svg" />}
                 </button>
               </div>
